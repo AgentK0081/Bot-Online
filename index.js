@@ -39,3 +39,33 @@ client.once("ready", () => {
 
 // Login
 client.login(process.env.TOKEN);
+
+const STAFF_DM_CHANNEL_ID = "1267429976509124659";
+
+client.on("messageCreate", async message => {
+  // Ignore bots
+  if (message.author.bot) return;
+
+  // Only DMs
+  if (message.guild) return;
+
+  const embed = {
+    title: "📨 New DM Received",
+    color: 0xff0000,
+    fields: [
+      { name: "User", value: `${message.author.tag}` },
+      { name: "User ID", value: message.author.id },
+      { name: "Message", value: message.content || "*No text content*" }
+    ],
+    timestamp: new Date()
+  };
+
+  try {
+    const staffChannel = await client.channels.fetch(STAFF_DM_CHANNEL_ID);
+    if (staffChannel) {
+      staffChannel.send({ embeds: [embed] });
+    }
+  } catch (err) {
+    console.error("Failed to forward DM:", err);
+  }
+});
