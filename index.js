@@ -10,6 +10,14 @@ app.get("/", (req, res) => res.send("Bot is running!"));
 app.listen(process.env.PORT || 3000, () =>
   console.log("Listening for Render keep-alive")
 );
+// ----- ticket transcript ----
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+app.use("/transcripts", express.static(path.join(__dirname, "transcripts")));
 
 // --- Discord Bot ---
 
