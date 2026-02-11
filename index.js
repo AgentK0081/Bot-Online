@@ -1,5 +1,5 @@
 import express from "express";
-import { Client, GatewayIntentBits, Collection } from "discord.js";
+import { Client, GatewayIntentBits, Collection, Partials } from "discord.js";
 import { readdirSync } from "fs";
 import "dotenv/config";
 import interactionHandler from "./interactionHandler.js";
@@ -12,8 +12,18 @@ app.listen(process.env.PORT || 3000, () =>
 );
 
 // --- Discord Bot ---
+
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds],
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.DirectMessages
+  ],
+  partials: [
+    Partials.Channel,
+    Partials.Message,
+    Partials.User
+  ]
 });
 
 // Load commands into client.commands
@@ -37,15 +47,11 @@ client.once("ready", () => {
   console.log(`Bot is online as ${client.user.tag}`);
 });
 
-// Login
-client.login(process.env.TOKEN);
-
 const STAFF_DM_CHANNEL_ID = "1267429976509124659";
 
 client.on("messageCreate", async message => {
   // Ignore bots
   if (message.author.bot) return;
-
   // Only DMs
   if (message.guild) return;
 
@@ -69,3 +75,6 @@ client.on("messageCreate", async message => {
     console.error("Failed to forward DM:", err);
   }
 });
+
+// Login
+client.login(process.env.TOKEN);
