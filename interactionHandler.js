@@ -77,35 +77,91 @@ export default function interactionHandler(client) {
 if (interaction.customId === "close_ticket") {
 
   const channel = interaction.channel;
-  const user = interaction.user;
 
-  await interaction.reply({ content: "Closing ticket and generating transcript...", ephemeral: true });
+  await interaction.reply({ content: "Generating transcript...", ephemeral: true });
 
-  // FETCH ALL MESSAGES
   let messages = [];
   let lastId;
 
   while (true) {
-    const fetched = await channel.messages.fetch({
-      limit: 100,
-      before: lastId
-    });
-
+    const fetched = await channel.messages.fetch({ limit: 100, before: lastId });
     if (fetched.size === 0) break;
-
     messages.push(...fetched.values());
     lastId = fetched.last().id;
   }
 
-  // Sort oldest first
   messages = messages.reverse();
 
-  // CREATE TRANSCRIPT TEXT
-  const transcript = messages.map(msg => {
-    return `[${msg.createdAt.toLocaleString()}] ${msg.author.tag}: ${msg.content}`;
-  }).join("\n");
+  const htmlContent = `
+  <html>
+  <head>
+  <title>${channel.name} Transcript</title>
+  <style>
+  body { font-family: Arial; background:#111; color:#fff; padding:20px; }
+  .msg { margin-bottom:10px; padding:8px; background:#222; border-radius:6px; }
+  .author { font-weight:bold; color:#4ea1ff; }
+  .time { font-size:12px; color:#aaa; }
+  </style>
+  </head>
+  <body>
+  <h2>Transcript: ${channel.name}</h2>
+  ${messages.map(msg => `
+    <div class="msg">
+      <div class="author">${msg.author.tag}</div>
+      <div class="time">${msg.createdAt.toLocaleString()}</div>
+      <div>${msg.content}</div>
+    </div>
+  `).join("")}
+  </body>
+  </html>
+  `;
 
-  const buffer = Buffer.from(transcript, "utf-8");
+  const fileName = `${channel.name}.html`;
+  const filePath = path.join(__dirname, "../transcripts", fileName);
+
+  fs.writeFileSync(filePath, htmlContent);
+
+  const transcriptURL = `https://YOUR-RENDER-APP.onrender.com/transcripts/${fileName}`;
+
+  // Remove open ticket record
+  for (const [key, value] of openTickets.entries()) {
+    if (value === channel.id) openTickets.delete(key);
+  }
+
+  await channel.setParent(CLOSED_CATEGORY_ID);
+
+  const staffChannel = await client.channels.fetch(STAFF_CHANNEL_ID);
+
+  await staffChannel.send(`📜 Ticket closed: ${transcriptURL}`);
+
+  const ticketOwner = channel.permissionOverwrites.cache
+    .filter(p => p.allow.has("ViewChannel") && p.id !== interaction.guild.roles.everyone.id)
+    .first();
+
+  if (ticketOwner) {
+    try {
+      const user = await client.users.fetch(ticketOwner.id);
+      await user.send(`📜 Your ticket transcript: ${transcriptURL}`);
+    } catch {}
+  }
+
+  const row = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId("reopen_ticket")
+      .setLabel("Reopen")
+      .setStyle(ButtonStyle.Success),
+    new ButtonBuilder()
+      .setCustomId("delete_ticket")
+      .setLabel("Delete")
+      .setStyle(ButtonStyle.Danger)
+  );
+
+  await channel.send({
+    content: "Staff: Reopen or delete this ticket?",
+    components: [row]
+  });
+}
+      
 
   // SEND TO STAFF LOG CHANNEL
   try {
