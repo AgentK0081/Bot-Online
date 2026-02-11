@@ -92,29 +92,36 @@ if (interaction.customId === "close_ticket") {
 
   messages = messages.reverse();
 
-  const htmlContent = `
-  <html>
-  <head>
-  <title>${channel.name} Transcript</title>
-  <style>
-  body { font-family: Arial; background:#111; color:#fff; padding:20px; }
-  .msg { margin-bottom:10px; padding:8px; background:#222; border-radius:6px; }
-  .author { font-weight:bold; color:#4ea1ff; }
-  .time { font-size:12px; color:#aaa; }
-  </style>
-  </head>
-  <body>
-  <h2>Transcript: ${channel.name}</h2>
-  ${messages.map(msg => `
-    <div class="msg">
-      <div class="author">${msg.author.tag}</div>
-      <div class="time">${msg.createdAt.toLocaleString()}</div>
-      <div>${msg.content}</div>
-    </div>
-  `).join("")}
-  </body>
-  </html>
+  // Build message HTML FIRST
+const messageHtml = messages.map(msg => {
+  return `
+  <div class="msg">
+    <div class="author">${msg.author.tag}</div>
+    <div class="time">${msg.createdAt.toLocaleString()}</div>
+    <div>${msg.content || ""}</div>
+  </div>
   `;
+}).join("");
+
+// Then build full HTML
+const htmlContent = `
+<html>
+<head>
+<title>${channel.name} Transcript</title>
+<style>
+body { font-family: Arial; background:#111; color:#fff; padding:20px; }
+.msg { margin-bottom:10px; padding:8px; background:#222; border-radius:6px; }
+.author { font-weight:bold; color:#4ea1ff; }
+.time { font-size:12px; color:#aaa; }
+</style>
+</head>
+<body>
+<h2>Transcript: ${channel.name}</h2>
+${messageHtml}
+</body>
+</html>
+`;
+
 
   const fileName = `${channel.name}.html`;
   const filePath = path.join(__dirname, "../transcripts", fileName);
