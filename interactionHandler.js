@@ -124,7 +124,15 @@ ${messageHtml}
 
 
   const fileName = `${channel.name}.html`;
-  const filePath = path.join(__dirname, "../transcripts", fileName);
+  const transcriptsDir = path.join(__dirname, "../transcripts");
+
+// ✅ Create folder if it doesn't exist
+if (!fs.existsSync(transcriptsDir)) {
+  fs.mkdirSync(transcriptsDir, { recursive: true });
+}
+
+const filePath = path.join(transcriptsDir, fileName);
+
 
   fs.writeFileSync(filePath, htmlContent);
 
