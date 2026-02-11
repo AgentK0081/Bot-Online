@@ -121,7 +121,7 @@ if (interaction.customId === "close_ticket") {
 
   fs.writeFileSync(filePath, htmlContent);
 
-  const transcriptURL = `https://YOUR-RENDER-APP.onrender.com/transcripts/${fileName}`;
+  const transcriptURL = `https://fbi-team-roblox.onrender.com/transcripts/${fileName}`;
 
   // Remove open ticket record
   for (const [key, value] of openTickets.entries()) {
