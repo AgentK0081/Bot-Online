@@ -170,56 +170,6 @@ ${messageHtml}
 }
       
 
-  // SEND TO STAFF LOG CHANNEL
-  try {
-    const staffChannel = await client.channels.fetch(STAFF_CHANNEL_ID);
-
-    await staffChannel.send({
-      content: `📜 Transcript for ${channel.name}`,
-      files: [{
-        attachment: buffer,
-        name: `${channel.name}-transcript.txt`
-      }]
-    });
-  } catch (err) {
-    console.error("Failed to send transcript to staff:", err);
-  }
-
-  // DM USER
-  try {
-    await user.send({
-      content: `📜 Here is the transcript for your ticket: ${channel.name}`,
-      files: [{
-        attachment: buffer,
-        name: `${channel.name}-transcript.txt`
-      }]
-    });
-  } catch (err) {
-    console.error("Could not DM user transcript.");
-  }
-
-  // MOVE TO CLOSED CATEGORY
-  await channel.setParent(CLOSED_CATEGORY_ID);
-
-  const row = new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId("reopen_ticket")
-      .setLabel("Reopen")
-      .setStyle(ButtonStyle.Success),
-
-    new ButtonBuilder()
-      .setCustomId("delete_ticket")
-      .setLabel("Delete")
-      .setStyle(ButtonStyle.Danger)
-  );
-
-  await channel.send({
-    content: "Staff: Reopen or delete this ticket?",
-    components: [row]
-  });
-}
-
-
       // REOPEN
       if (interaction.customId === "reopen_ticket") {
         await interaction.channel.setParent(SUPPORT_CATEGORY_ID);
