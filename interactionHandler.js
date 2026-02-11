@@ -122,19 +122,19 @@ ${messageHtml}
 </html>
 `;
 
+const fileName = `${channel.name}.html`;
 
-  const fileName = `${channel.name}.html`;
-  const transcriptsDir = path.join(__dirname, "../transcripts");
+const transcriptsDir = path.join(process.cwd(), "transcripts");
 
-// ✅ Create folder if it doesn't exist
+// ✅ Create transcripts folder if missing
 if (!fs.existsSync(transcriptsDir)) {
   fs.mkdirSync(transcriptsDir, { recursive: true });
 }
 
 const filePath = path.join(transcriptsDir, fileName);
 
-
-  fs.writeFileSync(filePath, htmlContent);
+fs.writeFileSync(filePath, htmlContent);
+  
 
   const transcriptURL = `https://fbi-team-roblox.onrender.com/transcripts/${fileName}`;
 
