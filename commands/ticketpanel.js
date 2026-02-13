@@ -10,6 +10,7 @@ export default {
   data: new SlashCommandBuilder()
     .setName("ticketpanel")
     .setDescription("Send the ticket panel"),
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
 
   async execute(interaction) {
 
