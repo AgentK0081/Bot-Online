@@ -3,13 +3,17 @@ import {
   EmbedBuilder,
   ActionRowBuilder,
   ButtonBuilder,
-  ButtonStyle
+  ButtonStyle,
+  PermissionFlagsBits
 } from "discord.js";
 
 export default {
   data: new SlashCommandBuilder()
     .setName("ticketpanel")
-    .setDescription("Send the ticket panel"),
+    .setDescription("Send the ticket panel")
+    .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+    .setDMPermission(false),
+
 
   async execute(interaction) {
 
