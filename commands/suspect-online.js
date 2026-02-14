@@ -56,6 +56,11 @@ export default {
 
       const presenceData = await presenceRes.json();
 
+      if (!presenceData.userPresences) {
+  console.log("Invalid presence response:", presenceData);
+  return interaction.editReply("⚠ Roblox API returned an invalid response.");
+}
+
       // 3️⃣ Filter online users
       const onlineUsers = presenceData.userPresences.filter(u =>
         u.userPresenceType === 2 // 2 = In Game
