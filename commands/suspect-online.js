@@ -3,7 +3,6 @@ import {
   EmbedBuilder
 } from "discord.js";
 
-import fetch from "node-fetch";
 
 // 🔴 PUT YOUR ROBLOX USERNAMES HERE
 const SUSPECT_USERNAMES = [
