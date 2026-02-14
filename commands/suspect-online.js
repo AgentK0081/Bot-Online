@@ -5,19 +5,7 @@ import {
 
 
 // 🔴 PUT YOUR ROBLOX USERNAMES HERE
-const SUSPECT_USERNAMES = [
-  "ItsWillian", "ExploitBan", "Akori4e", "LUKE_R2D2", "UhOkayz", "001vvs",
-    "Ikhebeenhond10", "darkvader_47", "Flo010709", "Hamim234", "Oaudyi", "Visttula",
-    "ShaneBarf", "LCCDeveloper", "hamim234", "De3pr", "ddhied", "Aadrit456",
-    "Earleeue", "ninjayush934", "alessandrotto02", "LifeHackeriscool", "SUPTUENES",
-    "BILLYBUTCHER_EXE", "sa1nteus", "matula2000", "cxnnor_bsbl217", "20Colian10",
-    "LucyTheSleepy", "Valdek33", "Trungdeptryy06", "tinsell99", "Doggie3337",
-    "WhoaThatsDak", "Nichthias", "IVAN091006", "4EVfaf", "Dinopod1234",
-    "AwesomEngineer01", "gew117123", "TheMiner127", "Eric2active", "xmaxy830",
-    "rxeul", "xzcqnv", "ma3qiii", "IIIIIIIIIIIIIIII", "OfficerJamesWithTase",
-    "TupolevTu4", "whippypiee", "JitteryRet", "NinjaWolf249", "Vindhaevn",
-    "EliteERLCRoleplayer", "S1rAvia", "H4nn4h_IsBetter"
-];
+const SUSPECT_USERNAMES = ["Builderman"];
 
 export default {
   data: new SlashCommandBuilder()
@@ -48,23 +36,31 @@ export default {
       const userIds = userIdData.data.map(u => u.id);
 
       // 2️⃣ Check presence
-      const presenceRes = await fetch("https://presence.roblox.com/v1/presence/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userIds })
-      });
+const presenceRes = await fetch("https://presence.roblox.com/v1/presence/users", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    "User-Agent": "Mozilla/5.0"
+  },
+  body: JSON.stringify({ userIds })
+});
 
-      const presenceData = await presenceRes.json();
+const presenceData = await presenceRes.json();
 
-      if (!presenceData.userPresences) {
-  console.log("Invalid presence response:", presenceData);
-  return interaction.editReply("⚠ Roblox API returned an invalid response.");
+// 🔍 Debug log
+console.log("Presence API Response:", presenceData);
+
+// If Roblox sends error
+if (!presenceData.userPresences) {
+  return interaction.editReply("⚠ Roblox API temporarily blocked the request. Try again in a few seconds.");
 }
+
 
       // 3️⃣ Filter online users
       const onlineUsers = presenceData.userPresences.filter(u =>
-        u.userPresenceType === 2 // 2 = In Game
-      );
+  u.userPresenceType === 2 || u.userPresenceType === 3
+);
+
 
       if (onlineUsers.length === 0) {
         return interaction.editReply({
