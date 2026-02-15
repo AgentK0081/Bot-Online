@@ -77,10 +77,6 @@ if (!presenceData.userPresences) {
 }
 
 
-      // 3️⃣ Filter online users
-      const onlineUsers = presenceData.userPresences.filter(u =>
-  u.userPresenceType === 2 || u.userPresenceType === 3
-);
 
 
       if (onlineUsers.length === 0) {
