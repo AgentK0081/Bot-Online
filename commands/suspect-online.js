@@ -27,7 +27,7 @@ export default {
 
   async execute(interaction) {
 
-  await interaction.deferReply({ fetchReply: true });
+  await interaction.deferReply();
 
   try {
 
