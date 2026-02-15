@@ -17,7 +17,7 @@ const SUSPECT_USERNAMES = [
   "rxeul", "xzcqnv", "ma3qiii", "IIIIIIIIIIIIIIII",
   "OfficerJamesWithTase", "TupolevTu4", "whippypiee",
   "JitteryRet", "NinjaWolf249", "Vindhaevn",
-  "EliteERLCRoleplayer", "S1rAvia", "H4nn4h_IsBetter"
+  "EliteERLCRoleplayer", "S1rAvia", "derek_123111", "H4nn4h_IsBetter"
 ];
 
 export default {
