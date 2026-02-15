@@ -5,7 +5,13 @@ import {
 
 
 // 🔴 PUT YOUR ROBLOX USERNAMES HERE
-const SUSPECT_USERNAMES = ["Builderman"];
+const SUSPECT_USERNAMES = ["Builderman", "ItsWillian", "ExploitBan", "Akori4e", "LUKE_R2D2", "UhOkayz", "001vvs", "Ikhebeenhond10", "darkvader_47", "Flo010709", "Hamim234", "Oaudyi", "Visttula", "ShaneBarf", "LCCDeveloper", "hamim234", "De3pr", "ddhied", "Aadrit456", "Earleeue", "ninjayush934", "alessandrotto02", "LifeHackeriscool", "SUPTUENES", "BILLYBUTCHER_EXE", "sa1nteus", "matula2000", "cxnnor_bsbl217", "20Colian10",
+    "LucyTheSleepy", "Valdek33", "Trungdeptryy06", "tinsell99", "Doggie3337",
+    "WhoaThatsDak", "Nichthias", "IVAN091006", "4EVfaf", "Dinopod1234",
+    "AwesomEngineer01", "gew117123", "TheMiner127", "Eric2active", "xmaxy830",
+    "rxeul", "xzcqnv", "ma3qiii", "IIIIIIIIIIIIIIII", "OfficerJamesWithTase",
+    "TupolevTu4", "whippypiee", "JitteryRet", "NinjaWolf249", "Vindhaevn",
+    "EliteERLCRoleplayer", "S1rAvia", "H4nn4h_IsBetter"];
 
 export default {
   data: new SlashCommandBuilder()
