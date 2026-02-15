@@ -35,17 +35,38 @@ export default {
 
       const userIds = userIdData.data.map(u => u.id);
 
-      // 2️⃣ Check presence
-const presenceRes = await fetch("https://presence.roblox.com/v1/presence/users", {
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    "User-Agent": "Mozilla/5.0"
-  },
-  body: JSON.stringify({ userIds })
-});
+      // Function to split array into chunks
+function chunkArray(array, size) {
+  const result = [];
+  for (let i = 0; i < array.length; i += size) {
+    result.push(array.slice(i, i + size));
+  }
+  return result;
+}
 
-const presenceData = await presenceRes.json();
+const chunks = chunkArray(userIds, 100);
+let onlineUsers = [];
+
+for (const chunk of chunks) {
+  const presenceRes = await fetch("https://presence.roblox.com/v1/presence/users", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ userIds: chunk })
+  });
+
+  const presenceData = await presenceRes.json();
+
+  if (!presenceData.userPresences) continue;
+
+  const onlineChunk = presenceData.userPresences.filter(u =>
+    u.userPresenceType === 2 || u.userPresenceType === 3
+  );
+
+  onlineUsers.push(...onlineChunk);
+}
+
 
 // 🔍 Debug log
 console.log("Presence API Response:", presenceData);
