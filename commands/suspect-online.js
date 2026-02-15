@@ -3,7 +3,6 @@ import {
   EmbedBuilder
 } from "discord.js";
 
-// 🔴 PUT YOUR ROBLOX USERNAMES HERE
 const SUSPECT_USERNAMES = [
   "Builderman", "ItsWillian", "ExploitBan", "Akori4e", "LUKE_R2D2",
   "UhOkayz", "001vvs", "Ikhebeenhond10", "darkvader_47", "Flo010709",
@@ -31,7 +30,6 @@ export default {
     await interaction.deferReply();
 
     try {
-      // 1️⃣ Convert usernames to user IDs
       const userIdRes = await fetch("https://users.roblox.com/v1/usernames/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -49,7 +47,6 @@ export default {
 
       const userIds = userIdData.data.map(u => u.id);
 
-      // 2️⃣ Split into chunks (Roblox max 100 per request)
       function chunkArray(array, size) {
         const result = [];
         for (let i = 0; i < array.length; i += size) {
@@ -92,9 +89,22 @@ export default {
         });
       }
 
-      // 3️⃣ Match back to usernames
       const onlineNames = onlineUsers.map(u => {
         const match = userIdData.data.find(d => d.id === u.userId);
         return match ? match.username : `UserID: ${u.userId}`;
-      })
-      
+      });
+
+      const embed = new EmbedBuilder()
+        .setColor(0xffffff)
+        .setTitle("🚨 Suspects Currently Online")
+        .setDescription(onlineNames.map(name => `• ${name}`).join("\n"))
+        .setTimestamp();
+
+      await interaction.editReply({ embeds: [embed] });
+
+    } catch (err) {
+      console.error("Roblox Presence Error:", err);
+      await interaction.editReply("❌ Failed to check Roblox presence.");
+    }
+  }
+};
