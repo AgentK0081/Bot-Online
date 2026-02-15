@@ -27,84 +27,76 @@ export default {
 
   async execute(interaction) {
 
-    await interaction.deferReply();
+  await interaction.deferReply({ fetchReply: true });
 
-    try {
-      const userIdRes = await fetch("https://users.roblox.com/v1/usernames/users", {
+  try {
+
+    let onlineUsers = [];
+
+    for (const username of SUSPECT_USERNAMES) {
+
+      // Convert username → userId
+      const userRes = await fetch("https://users.roblox.com/v1/usernames/users", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          usernames: SUSPECT_USERNAMES,
+          usernames: [username],
           excludeBannedUsers: false
         })
       });
 
-      const userIdData = await userIdRes.json();
+      const userData = await userRes.json();
 
-      if (!userIdData.data || userIdData.data.length === 0) {
-        return interaction.editReply("❌ No valid Roblox users found.");
-      }
+      if (!userData.data || !userData.data[0]) continue;
 
-      const userIds = userIdData.data.map(u => u.id);
+      const userId = userData.data[0].id;
 
-      function chunkArray(array, size) {
-        const result = [];
-        for (let i = 0; i < array.length; i += size) {
-          result.push(array.slice(i, i + size));
-        }
-        return result;
-      }
-
-      const chunks = chunkArray(userIds, 100);
-      let onlineUsers = [];
-
-      for (const chunk of chunks) {
-
-        const presenceRes = await fetch("https://presence.roblox.com/v1/presence/users", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userIds: chunk })
-        });
-
-        const presenceData = await presenceRes.json();
-
-        if (!presenceData.userPresences) continue;
-
-        const onlineChunk = presenceData.userPresences.filter(u =>
-          u.userPresenceType === 2 || u.userPresenceType === 3
-        );
-
-        onlineUsers.push(...onlineChunk);
-      }
-
-      if (onlineUsers.length === 0) {
-        return interaction.editReply({
-          embeds: [
-            new EmbedBuilder()
-              .setColor(0xff0000)
-              .setTitle("🔎 Suspect Status")
-              .setDescription("No suspects are currently in-game.")
-              .setTimestamp()
-          ]
-        });
-      }
-
-      const onlineNames = onlineUsers.map(u => {
-        const match = userIdData.data.find(d => d.id === u.userId);
-        return match ? match.username : `UserID: ${u.userId}`;
+      // Check presence ONE BY ONE
+      const presenceRes = await fetch("https://presence.roblox.com/v1/presence/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userIds: [userId] })
       });
 
-      const embed = new EmbedBuilder()
-        .setColor(0xffffff)
-        .setTitle("🚨 Suspects Currently Online")
-        .setDescription(onlineNames.map(name => `• ${name}`).join("\n"))
-        .setTimestamp();
+      const presenceData = await presenceRes.json();
 
-      await interaction.editReply({ embeds: [embed] });
+      if (!presenceData.userPresences) continue;
 
-    } catch (err) {
-      console.error("Roblox Presence Error:", err);
+      const presence = presenceData.userPresences[0];
+
+      if (presence.userPresenceType === 2 || presence.userPresenceType === 3) {
+        onlineUsers.push(username);
+      }
+
+      // Small delay to avoid rate limit
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+
+    if (onlineUsers.length === 0) {
+      return interaction.editReply({
+        embeds: [
+          new EmbedBuilder()
+            .setColor(0xff0000)
+            .setTitle("🔎 Suspect Status")
+            .setDescription("No suspects are currently in-game.")
+            .setTimestamp()
+        ]
+      });
+    }
+
+    const embed = new EmbedBuilder()
+      .setColor(0xffffff)
+      .setTitle("🚨 Suspects Currently Online")
+      .setDescription(onlineUsers.map(name => `• ${name}`).join("\n"))
+      .setTimestamp();
+
+    await interaction.editReply({ embeds: [embed] });
+
+  } catch (err) {
+    console.error("Roblox Error:", err);
+
+    if (!interaction.replied) {
       await interaction.editReply("❌ Failed to check Roblox presence.");
     }
   }
-};
+}
