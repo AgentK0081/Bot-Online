@@ -88,6 +88,7 @@ if (presence.userPresenceType === 2 || presence.userPresenceType === 3) {
 
 // Small delay to avoid rate limit
 await new Promise(resolve => setTimeout(resolve, 200));
+    }
 
     if (onlineUsers.length === 0) {
       return interaction.editReply({
