@@ -69,15 +69,25 @@ if (presence.userPresenceType === 2 || presence.userPresenceType === 3) {
   let gameName = "Unknown Game";
   let gameLink = null;
 
-  // Get game name from lastLocation
-  if (presence.lastLocation && presence.lastLocation !== "") {
-    gameName = presence.lastLocation;
-  }
+  // If universeId exists, fetch real game info
+if (presence.universeId) {
+  try {
+    const gameRes = await fetch(
+      `https://games.roblox.com/v1/games?universeIds=${presence.universeId}`
+    );
 
-  // If universeId exists, create clickable link
-  if (presence.universeId) {
-    gameLink = `https://www.roblox.com/games/${presence.placeId}`;
+    const gameData = await gameRes.json();
+
+    if (gameData.data && gameData.data[0]) {
+      gameName = gameData.data[0].name;
+      gameLink = `https://www.roblox.com/games/${presence.placeId}`;
+    }
+
+  } catch (err) {
+    console.log("Game info fetch failed");
   }
+}
+
 
   onlineUsers.push({
     username,
