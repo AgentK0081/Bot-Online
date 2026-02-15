@@ -52,25 +52,42 @@ export default {
       const userId = userData.data[0].id;
 
       // Check presence ONE BY ONE
-      const presenceRes = await fetch("https://presence.roblox.com/v1/presence/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userIds: [userId] })
-      });
+const presenceRes = await fetch("https://presence.roblox.com/v1/presence/users", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ userIds: [userId] })
+});
 
-      const presenceData = await presenceRes.json();
+const presenceData = await presenceRes.json();
 
-      if (!presenceData.userPresences) continue;
+if (!presenceData.userPresences) continue;
 
-      const presence = presenceData.userPresences[0];
+const presence = presenceData.userPresences[0];
 
-      if (presence.userPresenceType === 2 || presence.userPresenceType === 3) {
-        onlineUsers.push(username);
-      }
+if (presence.userPresenceType === 2 || presence.userPresenceType === 3) {
 
-      // Small delay to avoid rate limit
-      await new Promise(resolve => setTimeout(resolve, 200));
-    }
+  let gameName = "Unknown Game";
+  let gameLink = null;
+
+  // Get game name from lastLocation
+  if (presence.lastLocation && presence.lastLocation !== "") {
+    gameName = presence.lastLocation;
+  }
+
+  // If universeId exists, create clickable link
+  if (presence.universeId) {
+    gameLink = `https://www.roblox.com/games/${presence.placeId}`;
+  }
+
+  onlineUsers.push({
+    username,
+    game: gameName,
+    link: gameLink
+  });
+}
+
+// Small delay to avoid rate limit
+await new Promise(resolve => setTimeout(resolve, 200));
 
     if (onlineUsers.length === 0) {
       return interaction.editReply({
@@ -87,7 +104,16 @@ export default {
     const embed = new EmbedBuilder()
       .setColor(0xffffff)
       .setTitle("🚨 Suspects Currently Online")
-      .setDescription(onlineUsers.map(name => `• ${name}`).join("\n"))
+      .setDescription(
+  onlineUsers.map(user => {
+    if (user.link) {
+      return `• **${user.username}**\n  🎮 Playing: [${user.game}](${user.link})`;
+    } else {
+      return `• **${user.username}**\n  🎮 Playing: ${user.game}`;
+    }
+  }).join("\n\n")
+)
+
       .setTimestamp();
 
     await interaction.editReply({ embeds: [embed] });
