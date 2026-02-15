@@ -3,15 +3,23 @@ import {
   EmbedBuilder
 } from "discord.js";
 
-
 // 🔴 PUT YOUR ROBLOX USERNAMES HERE
-const SUSPECT_USERNAMES = ["Builderman", "ItsWillian", "ExploitBan", "Akori4e", "LUKE_R2D2", "UhOkayz", "001vvs", "Ikhebeenhond10", "darkvader_47", "Flo010709", "Hamim234", "Oaudyi", "Visttula", "ShaneBarf", "LCCDeveloper", "hamim234", "De3pr", "ddhied", "Aadrit456", "Earleeue", "ninjayush934", "alessandrotto02", "LifeHackeriscool", "SUPTUENES", "BILLYBUTCHER_EXE", "sa1nteus", "matula2000", "cxnnor_bsbl217", "20Colian10",
-    "LucyTheSleepy", "Valdek33", "Trungdeptryy06", "tinsell99", "Doggie3337",
-    "WhoaThatsDak", "Nichthias", "IVAN091006", "4EVfaf", "Dinopod1234",
-    "AwesomEngineer01", "gew117123", "TheMiner127", "Eric2active", "xmaxy830",
-    "rxeul", "xzcqnv", "ma3qiii", "IIIIIIIIIIIIIIII", "OfficerJamesWithTase",
-    "TupolevTu4", "whippypiee", "JitteryRet", "NinjaWolf249", "Vindhaevn",
-    "EliteERLCRoleplayer", "S1rAvia", "H4nn4h_IsBetter"];
+const SUSPECT_USERNAMES = [
+  "Builderman", "ItsWillian", "ExploitBan", "Akori4e", "LUKE_R2D2",
+  "UhOkayz", "001vvs", "Ikhebeenhond10", "darkvader_47", "Flo010709",
+  "Hamim234", "Oaudyi", "Visttula", "ShaneBarf", "LCCDeveloper",
+  "hamim234", "De3pr", "ddhied", "Aadrit456", "Earleeue",
+  "ninjayush934", "alessandrotto02", "LifeHackeriscool", "SUPTUENES",
+  "BILLYBUTCHER_EXE", "sa1nteus", "matula2000", "cxnnor_bsbl217",
+  "20Colian10", "LucyTheSleepy", "Valdek33", "Trungdeptryy06",
+  "tinsell99", "Doggie3337", "WhoaThatsDak", "Nichthias",
+  "IVAN091006", "4EVfaf", "Dinopod1234", "AwesomEngineer01",
+  "gew117123", "TheMiner127", "Eric2active", "xmaxy830",
+  "rxeul", "xzcqnv", "ma3qiii", "IIIIIIIIIIIIIIII",
+  "OfficerJamesWithTase", "TupolevTu4", "whippypiee",
+  "JitteryRet", "NinjaWolf249", "Vindhaevn",
+  "EliteERLCRoleplayer", "S1rAvia", "H4nn4h_IsBetter"
+];
 
 export default {
   data: new SlashCommandBuilder()
@@ -41,49 +49,36 @@ export default {
 
       const userIds = userIdData.data.map(u => u.id);
 
-      // Function to split array into chunks
-function chunkArray(array, size) {
-  const result = [];
-  for (let i = 0; i < array.length; i += size) {
-    result.push(array.slice(i, i + size));
-  }
-  return result;
-}
+      // 2️⃣ Split into chunks (Roblox max 100 per request)
+      function chunkArray(array, size) {
+        const result = [];
+        for (let i = 0; i < array.length; i += size) {
+          result.push(array.slice(i, i + size));
+        }
+        return result;
+      }
 
-const chunks = chunkArray(userIds, 100);
-let onlineUsers = [];
+      const chunks = chunkArray(userIds, 100);
+      let onlineUsers = [];
 
-for (const chunk of chunks) {
-  const presenceRes = await fetch("https://presence.roblox.com/v1/presence/users", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ userIds: chunk })
-  });
+      for (const chunk of chunks) {
 
-  const presenceData = await presenceRes.json();
+        const presenceRes = await fetch("https://presence.roblox.com/v1/presence/users", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userIds: chunk })
+        });
 
-  if (!presenceData.userPresences) continue;
+        const presenceData = await presenceRes.json();
 
-  const onlineChunk = presenceData.userPresences.filter(u =>
-    u.userPresenceType === 2 || u.userPresenceType === 3
-  );
+        if (!presenceData.userPresences) continue;
 
-  onlineUsers.push(...onlineChunk);
-}
+        const onlineChunk = presenceData.userPresences.filter(u =>
+          u.userPresenceType === 2 || u.userPresenceType === 3
+        );
 
-
-// 🔍 Debug log
-console.log("Presence API Response:", presenceData);
-
-// If Roblox sends error
-if (!presenceData.userPresences) {
-  return interaction.editReply("⚠ Roblox API temporarily blocked the request. Try again in a few seconds.");
-}
-
-
-
+        onlineUsers.push(...onlineChunk);
+      }
 
       if (onlineUsers.length === 0) {
         return interaction.editReply({
@@ -97,24 +92,9 @@ if (!presenceData.userPresences) {
         });
       }
 
-      // Match back to usernames
+      // 3️⃣ Match back to usernames
       const onlineNames = onlineUsers.map(u => {
         const match = userIdData.data.find(d => d.id === u.userId);
         return match ? match.username : `UserID: ${u.userId}`;
-      });
-
-      const embed = new EmbedBuilder()
-        .setColor(0xffffff)
-        .setTitle("🚨 Suspects Currently Online")
-        .setDescription(onlineNames.map(name => `• ${name}`).join("\n"))
-        .setTimestamp();
-
-      await interaction.editReply({ embeds: [embed] });
-
-    } catch (err) {
-      console.error(err);
-      await interaction.editReply("❌ Failed to check Roblox presence.");
-    }
-  }
-};
-                                                                  
+      })
+      
