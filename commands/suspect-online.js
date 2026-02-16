@@ -53,10 +53,22 @@ export default {
 
       // 2️⃣ Check presence for ALL users at once
       const presenceRes = await fetch("https://presence.roblox.com/v1/presence/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userIds })
-      });
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ userIds })
+});
+
+if (presenceRes.status === 429) {
+  return interaction.editReply("⏳ Roblox is rate limiting. Try again in a few seconds.");
+}
+
+if (!presenceRes.ok) {
+  console.log("Presence status:", presenceRes.status);
+  return interaction.editReply("⚠ Roblox API temporarily blocked the request.");
+}
+
+const presenceData = await presenceRes.json();
+      
 
       const presenceData = await presenceRes.json();
       if (!presenceData.userPresences)
