@@ -49,7 +49,8 @@ export default {
       if (!userData.data || userData.data.length === 0)
         return interaction.editReply("❌ No valid Roblox users found.");
 
-      const userIds = userData.data.map(u => u.id);
+      const userIds = [...new Set(userData.data.map(u => u.id))];
+
 
       // 2️⃣ Check presence for ALL users at once
       const presenceRes = await fetch("https://presence.roblox.com/v1/presence/users", {
