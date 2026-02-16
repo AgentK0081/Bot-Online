@@ -20,96 +20,89 @@ const SUSPECT_USERNAMES = [
   "EliteERLCRoleplayer", "S1rAvia", "H4nn4h_IsBetter"
 ];
 
-export default {
-  data: new SlashCommandBuilder()
-    .setName("suspect-online")
-    .setDescription("Check which suspects are currently online in Roblox"),
-
-  async execute(interaction) {
+async execute(interaction) {
 
   await interaction.deferReply();
 
   try {
 
     let onlineUsers = [];
+    const universeCache = new Map();
 
-    for (const username of SUSPECT_USERNAMES) {
+    // 1️⃣ Convert ALL usernames at once
+    const userRes = await fetch("https://users.roblox.com/v1/usernames/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        usernames: SUSPECT_USERNAMES,
+        excludeBannedUsers: false
+      })
+    });
 
-      // Convert username → userId
-      const userRes = await fetch("https://users.roblox.com/v1/usernames/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          usernames: [username],
-          excludeBannedUsers: false
-        })
-      });
+    const userData = await userRes.json();
+    if (!userData.data || userData.data.length === 0)
+      return interaction.editReply("❌ No valid Roblox users found.");
 
-      const userData = await userRes.json();
+    const userIds = userData.data.map(u => u.id);
 
-      if (!userData.data || !userData.data[0]) continue;
+    // 2️⃣ Check presence for ALL users at once
+    const presenceRes = await fetch("https://presence.roblox.com/v1/presence/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userIds })
+    });
 
-      const userId = userData.data[0].id;
+    const presenceData = await presenceRes.json();
+    if (!presenceData.userPresences)
+      return interaction.editReply("⚠ Roblox API blocked the request. Try again.");
 
-      // Check presence ONE BY ONE
-const presenceRes = await fetch("https://presence.roblox.com/v1/presence/users", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ userIds: [userId] })
-});
+    for (const presence of presenceData.userPresences) {
 
-const presenceData = await presenceRes.json();
+      if (presence.userPresenceType !== 2 && presence.userPresenceType !== 3)
+        continue;
 
-if (!presenceData.userPresences) continue;
+      const userMatch = userData.data.find(u => u.id === presence.userId);
+      if (!userMatch) continue;
 
-const presence = presenceData.userPresences[0];
-console.log("Presence Object:", presence);
+      let gameName = "Unknown Game";
+      let gameLink = null;
 
-if (presence.userPresenceType === 2 || presence.userPresenceType === 3) {
+      if (presence.placeId) {
 
-  let gameName = "Unknown Game";
-let gameLink = null;
-
-if (presence.placeId) {
-
-  try {
-    // 1️⃣ Get universeId from placeId
-    const universeRes = await fetch(
-      `https://apis.roblox.com/universes/v1/places/${presence.placeId}/universe`
-    );
-
-    const universeData = await universeRes.json();
-
-    if (universeData.universeId) {
-
-      // 2️⃣ Get game info using universeId
-      const gameRes = await fetch(
-        `https://games.roblox.com/v1/games?universeIds=${universeData.universeId}`
-      );
-
-      const gameData = await gameRes.json();
-
-      if (gameData.data && gameData.data[0]) {
-        gameName = gameData.data[0].name;
         gameLink = `https://www.roblox.com/games/${presence.placeId}`;
+
+        // Check cache first
+        if (universeCache.has(presence.placeId)) {
+          gameName = universeCache.get(presence.placeId);
+        } else {
+          try {
+            const universeRes = await fetch(
+              `https://apis.roblox.com/universes/v1/places/${presence.placeId}/universe`
+            );
+            const universeData = await universeRes.json();
+
+            if (universeData.universeId) {
+              const gameRes = await fetch(
+                `https://games.roblox.com/v1/games?universeIds=${universeData.universeId}`
+              );
+              const gameData = await gameRes.json();
+
+              if (gameData.data && gameData.data[0]) {
+                gameName = gameData.data[0].name;
+                universeCache.set(presence.placeId, gameName);
+              }
+            }
+          } catch (err) {
+            console.log("Game fetch failed:", err);
+          }
+        }
       }
-    }
 
-  } catch (err) {
-    console.log("Game fetch failed:", err);
-  }
-}
-
-
-  onlineUsers.push({
-    username,
-    game: gameName,
-    link: gameLink
-  });
-}
-
-// Small delay to avoid rate limit
-await new Promise(resolve => setTimeout(resolve, 200));
+      onlineUsers.push({
+        username: userMatch.username,
+        game: gameName,
+        link: gameLink
+      });
     }
 
     if (onlineUsers.length === 0) {
@@ -128,25 +121,21 @@ await new Promise(resolve => setTimeout(resolve, 200));
       .setColor(0xffffff)
       .setTitle("🚨 Suspects Currently Online")
       .setDescription(
-  onlineUsers.map(user => {
-    if (user.link) {
-      return `• **${user.username}**\n  🎮 Playing: [${user.game}](${user.link})`;
-    } else {
-      return `• **${user.username}**\n  🎮 Playing: ${user.game}`;
-    }
-  }).join("\n\n")
-)
-
+        onlineUsers.map(user =>
+          user.link
+            ? `• **${user.username}**\n  🎮 Playing: [${user.game}](${user.link})`
+            : `• **${user.username}**\n  🎮 Playing: ${user.game}`
+        ).join("\n\n")
+      )
       .setTimestamp();
 
     await interaction.editReply({ embeds: [embed] });
 
   } catch (err) {
-    console.error("Roblox Error:", err);
-
-    if (!interaction.replied) {
-      await interaction.editReply("❌ Failed to check Roblox presence.");
-    }
+    console.error(err);
+    await interaction.editReply("❌ Failed to check Roblox presence.");
   }
+    }
+  
 }
 };
