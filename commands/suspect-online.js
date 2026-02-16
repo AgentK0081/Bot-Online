@@ -63,6 +63,7 @@ const presenceData = await presenceRes.json();
 if (!presenceData.userPresences) continue;
 
 const presence = presenceData.userPresences[0];
+console.log("Presence Object:", presence);
 
 if (presence.userPresenceType === 2 || presence.userPresenceType === 3) {
 
