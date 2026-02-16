@@ -67,24 +67,35 @@ const presence = presenceData.userPresences[0];
 if (presence.userPresenceType === 2 || presence.userPresenceType === 3) {
 
   let gameName = "Unknown Game";
-  let gameLink = null;
+let gameLink = null;
 
-  // If universeId exists, fetch real game info
-if (presence.universeId) {
+if (presence.placeId) {
+
   try {
-    const gameRes = await fetch(
-      `https://games.roblox.com/v1/games?universeIds=${presence.universeId}`
+    // 1️⃣ Get universeId from placeId
+    const universeRes = await fetch(
+      `https://apis.roblox.com/universes/v1/places/${presence.placeId}/universe`
     );
 
-    const gameData = await gameRes.json();
+    const universeData = await universeRes.json();
 
-    if (gameData.data && gameData.data[0]) {
-      gameName = gameData.data[0].name;
-      gameLink = `https://www.roblox.com/games/${presence.placeId}`;
+    if (universeData.universeId) {
+
+      // 2️⃣ Get game info using universeId
+      const gameRes = await fetch(
+        `https://games.roblox.com/v1/games?universeIds=${universeData.universeId}`
+      );
+
+      const gameData = await gameRes.json();
+
+      if (gameData.data && gameData.data[0]) {
+        gameName = gameData.data[0].name;
+        gameLink = `https://www.roblox.com/games/${presence.placeId}`;
+      }
     }
 
   } catch (err) {
-    console.log("Game info fetch failed");
+    console.log("Game fetch failed:", err);
   }
 }
 
