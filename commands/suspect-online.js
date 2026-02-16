@@ -67,7 +67,6 @@ if (!presenceRes.ok) {
   return interaction.editReply("⚠ Roblox API temporarily blocked the request.");
 }
 
-const presenceData = await presenceRes.json();
       
 
       const presenceData = await presenceRes.json();
