@@ -343,7 +343,7 @@ Applications open only when needed and will be announced.
   await interaction.reply({
     embeds: [embed],
     ephemeral: true
-  });
+  }
 });
       
     
