@@ -203,6 +203,9 @@ fs.writeFileSync(filePath, htmlContent);
   const category = isSupport ? SUPPORT_CATEGORY_ID : MANAGEMENT_CATEGORY_ID;
   const color = isSupport ? 0xffffff : 0x3498db;
 
+  const STAFF_ROLE_ID = "1148217586513891399";   // 🔁 replace
+  const ADMIN_ROLE_ID = "1147821682405417041";   // 🔁 replace
+      
   // 🚫 Prevent Duplicate Tickets
   const existing = openTickets.get(`${interaction.user.id}-${type}`);
   if (existing) {
@@ -211,7 +214,34 @@ fs.writeFileSync(filePath, htmlContent);
       ephemeral: true
     });
   }
-
+  // 🔐 Permission Setup
+  const permissionOverwrites = [
+    {
+      id: interaction.guild.roles.everyone,
+      deny: ["ViewChannel"]
+    },
+    {
+      id: interaction.user.id,
+      allow: ["ViewChannel", "SendMessages", "ReadMessageHistory"]
+    },
+    {
+      id: interaction.client.user.id,
+      allow: ["ViewChannel", "SendMessages", "ManageChannels", "ReadMessageHistory"]
+    },
+    {
+      id: ADMIN_ROLE_ID,
+      allow: ["ViewChannel", "SendMessages", "ReadMessageHistory"]
+    }
+  ];
+      
+  // Support ticket → Staff can see
+  if (isSupport) {
+    permissionOverwrites.push({
+      id: STAFF_ROLE_ID,
+      allow: ["ViewChannel", "SendMessages", "ReadMessageHistory"]
+    });
+  }
+      
   const channel = await interaction.guild.channels.create({
     name: `${type}-${interaction.user.username}`,
     parent: category,
@@ -229,6 +259,7 @@ fs.writeFileSync(filePath, htmlContent);
 
   openTickets.set(`${interaction.user.id}-${type}`, channel.id);
 
+      //---------- help setup-------
   const mainEmbed = new EmbedBuilder()
     .setColor(color)
     .setDescription(
