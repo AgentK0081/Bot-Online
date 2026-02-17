@@ -135,7 +135,7 @@ Applications open only when needed and will be announced.
     embeds: [embed],
     ephemeral: true
 });
-  }
+  
     // ==============================
     // BUTTON HANDLING
     // ==============================
