@@ -264,6 +264,103 @@ To close this ticket click on the button with 🔒`
   });
 }
 
+    client.on("interactionCreate", async interaction => {
+  if (!interaction.isButton()) return;
+
+  if (interaction.customId === "help_new") {
+
+    const embed = new EmbedBuilder()
+      .setColor(0xffffff)
+      .setTitle("New Here?")
+      .setDescription(
+`New members need to understand that this is **NOT** a private server roleplay community. Our community roleplays in Tier 2 or 3 servers. But occasionally we do training in private servers for old and new members, as if you do good in those training you will be one step closer to promotion.
+
+# Public Information
+
+> **•** You can get some information on the suspects through our website below.
+> **Link :** [Wanted Reports](https://agentk0081.github.io/FBI-TEAM-ROBLOX2/)
+
+> **•** Information about members and Divisions:
+> **Link :** [FBI TEAM ROBLOX](https://agentk0081.github.io/FBI_TEAM_ROBLOX/)
+
+> **•** ERLC criminal database:
+> **Link :** [Database affiliated to Mafias](https://himfbi.github.io/ERLC-Criminal-Database)
+
+> **•** Organized Crime Rings:
+> **Link :** [Organized Crime Rings](https://himfbi.github.io/Organized-Crime-Ring/)`
+      )
+      .setImage("https://cdn.discordapp.com/attachments/1375355821688492103/1472230526453547170/Untitled.png?ex=69951cc6&is=6993cb46&hm=776648655c5e1d5ef8e9bc39e38e46afe908ffbe2932da0311e195ebd56bf3de&") // replace
+      .setTimestamp();
+
+    return interaction.reply({ embeds: [embed], ephemeral: true });
+  }
+
+  if (interaction.customId === "help_verify") {
+
+    const embed = new EmbedBuilder()
+      .setColor(0x57f287) // Green
+      .setTitle("How to Join and verify?")
+      .setDescription(
+`To join is very simple. Click below to join our Roblox group:
+
+***Link :*** [Click here](https://www.roblox.com/communities/14942189/FBI-TEAM-ROBLOX#!/about)
+
+**But for promotion you need to be active in Tier 3 servers.**
+
+**How to verify?**
+
+[Click here](https://discord.com/channels/1147660361303072789/1163480516054503424/1163765339465732116)`
+      )
+      .setImage("https://cdn.discordapp.com/attachments/1375355821688492103/1473189519967653918/FBINeedYou.png?ex=69954e28&is=6993fca8&hm=344d039b4c248f40f9da2c11ddae52840af09df8eb65a46c43045192169648de&")
+      .setTimestamp();
+
+    return interaction.reply({ embeds: [embed], ephemeral: true });
+  }
+
+  if (interaction.customId === "help_promote") {
+
+    const embed = new EmbedBuilder()
+      .setColor(0xed4245) // Red
+      .setTitle("How to get promoted?")
+      .setDescription(
+`To get promoted you need to be active and be on-duty with other agents or do shifts by using Trident bot using \`/shift manage\`.
+
+You can increase promotion chance by joining trainings.
+
+**How does training work?**
+Trainings are hosted in private ERLC servers. It involves driving, chasing, PIT maneuvering, shooting and more.
+
+After training, agents can leave or go on shift together in Tier 3 server.`
+      )
+      .setImage("https://cdn.discordapp.com/attachments/1375355821688492103/1473151331047837738/1055751841_2534724415_1717252334504.png?ex=69952a97&is=6993d917&hm=57a8b2a4a2be476b555eacf5d1cdadadaa2beb27e7617f3725ca181edcb029ef&")
+      .setTimestamp();
+
+    return interaction.reply({ embeds: [embed], ephemeral: true });
+  }
+
+  if (interaction.customId === "help_staff") {
+
+    const embed = new EmbedBuilder()
+      .setColor(0x5865f2) // Dark Blue
+      .setTitle("How to be Staff?")
+      .setDescription(
+`You can only be staff after completing an application and being accepted.
+
+Applications open only when needed and will be announced.
+
+**Requirements**
+• Be 16+  
+• Good English  
+• Active for 3+ months  
+• Humble and friendly`
+      )
+      .setImage("https://cdn.discordapp.com/attachments/1375355821688492103/1472480419365519508/0F663E29-23D8-44D7-B9F3-F57C501B4BCB.jpg?ex=6994b401&is=69936281&hm=d4743381fe6ca891a47f594cf4e7b2afadcbcfc1a836b00ac17e9f765fff3e51&")
+      .setTimestamp();
+
+    return interaction.reply({ embeds: [embed], ephemeral: true });
+  }
+});
+    
 
   });
           }
