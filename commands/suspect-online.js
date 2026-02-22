@@ -17,11 +17,11 @@ const SUSPECT_USERNAMES = [
   "rxeul", "xzcqnv", "ma3qiii", "IIIIIIIIIIIIIIII",
   "OfficerJamesWithTase", "TupolevTu4", "whippypiee",
   "JitteryRet", "NinjaWolf249", "Vindhaevn",
-  "EliteERLCRoleplayer", "S1rAvia", "H4nn4h_IsBetter", "IntrixTV", "BillyMadison50", "Holdenphp", "maxexsonic75", "Mirisek11", "karimisalwaysnice1"
+  "EliteERLCRoleplayer", "S1rAvia", "H4nn4h_IsBetter"
 ];
 
-// Cache for user IDs
-const userIdCache = new Map();
+// Cache to store placeId -> game name mappings
+const universeCache = new Map();
 
 export default {
   data: new SlashCommandBuilder()
@@ -32,238 +32,144 @@ export default {
     await interaction.deferReply();
 
     try {
-      const onlineUsers = [];
-      const universeCache = new Map();
+      let onlineUsers = [];
 
-      // 1️⃣ Get User IDs with proper batching
-      let allUserIds = [];
-      const batchSize = 100; // Roblox API limit
+      // 1️⃣ Convert usernames to user IDs
+      console.log('Fetching user IDs...');
+      const userRes = await fetch("https://users.roblox.com/v1/usernames/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          usernames: SUSPECT_USERNAMES,
+          excludeBannedUsers: false
+        })
+      });
 
-      for (let i = 0; i < SUSPECT_USERNAMES.length; i += batchSize) {
-        const batch = SUSPECT_USERNAMES.slice(i, i + batchSize);
-
-        try {
-          const userRes = await fetch("https://users.roblox.com/v1/usernames/users", {
-            method: "POST",
-            headers: { 
-              "Content-Type": "application/json",
-              "Accept": "application/json"
-            },
-            body: JSON.stringify({
-              usernames: batch,
-              excludeBannedUsers: false
-            })
-          });
-
-          if (!userRes.ok) {
-            console.error(`User API error: ${userRes.status} ${userRes.statusText}`);
-            const errorText = await userRes.text();
-            console.error("Response:", errorText);
-            continue;
-          }
-
-          const userData = await userRes.json();
-          
-          if (userData.data && userData.data.length > 0) {
-            for (const user of userData.data) {
-              userIdCache.set(user.name, user.id);
-              allUserIds.push(user.id);
-            }
-          }
-
-          // Delay between batches
-          if (i + batchSize < SUSPECT_USERNAMES.length) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          }
-        } catch (err) {
-          console.error("Error fetching user batch:", err.message);
-        }
+      if (!userRes.ok) {
+        console.error('User fetch failed:', userRes.status);
+        return interaction.editReply("❌ Failed to fetch user data from Roblox.");
       }
 
-      if (allUserIds.length === 0) {
-        return interaction.editReply({
-          embeds: [
-            new EmbedBuilder()
-              .setColor(0xff0000)
-              .setTitle("❌ Error")
-              .setDescription("Could not fetch user IDs from Roblox. The API may be temporarily unavailable.")
-              .setTimestamp()
-          ]
-        });
+      const userData = await userRes.json();
+      if (!userData.data || userData.data.length === 0) {
+        return interaction.editReply("❌ No valid Roblox users found.");
       }
 
-      // Remove duplicates and ensure all are valid numbers
-      allUserIds = [...new Set(allUserIds)].filter(id => typeof id === 'number' && id > 0);
+      const userIds = [...new Set(userData.data.map(u => u.id))];
+      console.log(`Found ${userIds.length} valid users`);
 
-      console.log(`Fetched ${allUserIds.length} valid user IDs`);
+      // 2️⃣ Check presence for all users
+      console.log('Checking presence...');
+      const presenceRes = await fetch("https://presence.roblox.com/v1/presence/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userIds })
+      });
 
-      // 2️⃣ Check presence in smaller batches (50 instead of 100 to be safe)
-      const presenceBatchSize = 50;
-      let allPresences = [];
-
-      for (let i = 0; i < allUserIds.length; i += presenceBatchSize) {
-        const batch = allUserIds.slice(i, i + presenceBatchSize);
-
-        try {
-          console.log(`Checking presence for batch ${Math.floor(i/presenceBatchSize) + 1}/${Math.ceil(allUserIds.length/presenceBatchSize)}`);
-          
-          const requestBody = { userIds: batch };
-          console.log(`Request body sample:`, JSON.stringify(requestBody).substring(0, 100));
-
-          const presenceRes = await fetch("https://presence.roblox.com/v1/presence/users", {
-            method: "POST",
-            headers: { 
-              "Content-Type": "application/json",
-              "Accept": "application/json"
-            },
-            body: JSON.stringify(requestBody)
-          });
-
-          console.log(`Presence API response: ${presenceRes.status} ${presenceRes.statusText}`);
-
-          // Handle rate limiting
-          if (presenceRes.status === 429) {
-            console.log("Rate limited, waiting 5 seconds...");
-            await new Promise(resolve => setTimeout(resolve, 5000));
-            i -= presenceBatchSize; // Retry this batch
-            continue;
-          }
-
-          // Handle bad request
-          if (presenceRes.status === 400) {
-            const errorText = await presenceRes.text();
-            console.error("400 Error details:", errorText);
-            console.error("Request that caused 400:", JSON.stringify(requestBody));
-            
-            // Try with even smaller batch
-            if (batch.length > 10) {
-              console.log("Retrying with smaller batch size (10)...");
-              const smallBatchSize = 10;
-              for (let j = 0; j < batch.length; j += smallBatchSize) {
-                const smallBatch = batch.slice(j, j + smallBatchSize);
-                try {
-                  const retryRes = await fetch("https://presence.roblox.com/v1/presence/users", {
-                    method: "POST",
-                    headers: { 
-                      "Content-Type": "application/json",
-                      "Accept": "application/json"
-                    },
-                    body: JSON.stringify({ userIds: smallBatch })
-                  });
-
-                  if (retryRes.ok) {
-                    const retryData = await retryRes.json();
-                    if (retryData.userPresences) {
-                      allPresences = allPresences.concat(retryData.userPresences);
-                    }
-                  }
-
-                  await new Promise(resolve => setTimeout(resolve, 500));
-                } catch (err) {
-                  console.error("Small batch retry failed:", err.message);
-                }
-              }
-            }
-            continue;
-          }
-
-          if (!presenceRes.ok) {
-            console.error(`Presence API error: ${presenceRes.status}`);
-            continue;
-          }
-
-          const presenceData = await presenceRes.json();
-          
-          if (presenceData.userPresences && presenceData.userPresences.length > 0) {
-            allPresences = allPresences.concat(presenceData.userPresences);
-            console.log(`Got ${presenceData.userPresences.length} presences`);
-          }
-
-          // Delay between batches
-          await new Promise(resolve => setTimeout(resolve, 1000));
-
-        } catch (err) {
-          console.error("Error fetching presence batch:", err.message);
-        }
+      if (presenceRes.status === 429) {
+        return interaction.editReply("⏳ Roblox is rate limiting. Try again in a few seconds.");
       }
 
-      console.log(`Total presences fetched: ${allPresences.length}`);
-
-      if (allPresences.length === 0) {
-        return interaction.editReply({
-          embeds: [
-            new EmbedBuilder()
-              .setColor(0xffa500)
-              .setTitle("⚠️ API Issue")
-              .setDescription("Unable to fetch presence data from Roblox. This is usually temporary. Please try again in a minute.")
-              .setTimestamp()
-          ]
-        });
+      if (!presenceRes.ok) {
+        console.error('Presence fetch failed:', presenceRes.status);
+        return interaction.editReply("⚠️ Roblox API temporarily blocked the request.");
       }
 
-      // 3️⃣ Process online users
-      for (const presence of allPresences) {
+      const presenceData = await presenceRes.json();
+      if (!presenceData.userPresences) {
+        return interaction.editReply("⚠️ Failed to get presence data. Try again.");
+      }
+
+      console.log(`Got presence data for ${presenceData.userPresences.length} users`);
+
+      // 3️⃣ Process each online user
+      for (const presence of presenceData.userPresences) {
         // userPresenceType: 0 = Offline, 1 = Online (website), 2 = In Game, 3 = In Studio
         if (presence.userPresenceType !== 2 && presence.userPresenceType !== 3) {
           continue;
         }
 
-        // Find username from cache
-        const username = [...userIdCache.entries()]
-          .find(([name, id]) => id === presence.userId)?.[0];
+        const userMatch = userData.data.find(u => u.id === presence.userId);
+        if (!userMatch) continue;
 
-        if (!username) continue;
-
-        let gameName = presence.userPresenceType === 3 ? "Roblox Studio" : "Unknown Game";
+        let gameName = "Unknown Game";
         let gameLink = null;
+        let status = "🎮 In Game";
 
-        // Only fetch game details if they're in-game (not studio)
-        if (presence.userPresenceType === 2 && presence.placeId) {
+        // Handle Studio users separately
+        if (presence.userPresenceType === 3) {
+          gameName = "Roblox Studio";
+          status = "🔧 In Studio";
+          gameLink = null;
+        } 
+        // Handle In-Game users
+        else if (presence.userPresenceType === 2 && presence.placeId) {
           gameLink = `https://www.roblox.com/games/${presence.placeId}`;
 
+          // Check cache first
           if (universeCache.has(presence.placeId)) {
             gameName = universeCache.get(presence.placeId);
+            console.log(`Using cached name for placeId ${presence.placeId}: ${gameName}`);
           } else {
+            // Fetch game name
             try {
-              const universeRes = await Promise.race([
-                fetch(`https://apis.roblox.com/universes/v1/places/${presence.placeId}/universe`),
-                new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
-              ]);
+              console.log(`Fetching game name for placeId: ${presence.placeId}`);
+              
+              // Step 1: Get universeId from placeId
+              const universeRes = await fetch(
+                `https://apis.roblox.com/universes/v1/places/${presence.placeId}/universe`,
+                { headers: { "Accept": "application/json" } }
+              );
 
               if (!universeRes.ok) {
+                console.error(`Universe API failed for placeId ${presence.placeId}:`, universeRes.status);
                 throw new Error(`Universe API returned ${universeRes.status}`);
               }
 
               const universeData = await universeRes.json();
+              console.log(`Universe data:`, universeData);
 
-              if (universeData.universeId) {
-                const gameRes = await Promise.race([
-                  fetch(`https://games.roblox.com/v1/games?universeIds=${universeData.universeId}`),
-                  new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
-                ]);
+              if (universeData && universeData.universeId) {
+                // Step 2: Get game name from universeId
+                const gameRes = await fetch(
+                  `https://games.roblox.com/v1/games?universeIds=${universeData.universeId}`,
+                  { headers: { "Accept": "application/json" } }
+                );
 
                 if (!gameRes.ok) {
+                  console.error(`Games API failed for universeId ${universeData.universeId}:`, gameRes.status);
                   throw new Error(`Games API returned ${gameRes.status}`);
                 }
 
                 const gameData = await gameRes.json();
+                console.log(`Game data:`, gameData);
 
-                if (gameData.data && gameData.data[0]) {
+                if (gameData && gameData.data && gameData.data[0] && gameData.data[0].name) {
                   gameName = gameData.data[0].name;
                   universeCache.set(presence.placeId, gameName);
+                  console.log(`✓ Found game name: ${gameName}`);
+                } else {
+                  console.warn(`No game name in response for placeId ${presence.placeId}`);
                 }
+              } else {
+                console.warn(`No universeId for placeId ${presence.placeId}`);
               }
+
+              // Small delay to avoid rate limiting
+              await new Promise(resolve => setTimeout(resolve, 100));
+
             } catch (err) {
-              console.log(`Game fetch failed for ${presence.placeId}:`, err.message);
+              console.error(`Game fetch failed for ${userMatch.username}:`, err.message);
+              // Keep gameName as "Unknown Game"
             }
           }
         }
 
         onlineUsers.push({
-          username: username,
+          username: userMatch.username,
           game: gameName,
           link: gameLink,
-          status: presence.userPresenceType === 3 ? "🔧 In Studio" : "🎮 In Game"
+          status: status
         });
       }
 
@@ -274,27 +180,24 @@ export default {
             new EmbedBuilder()
               .setColor(0x22c55e)
               .setTitle("✅ All Clear")
-              .setDescription(`No suspects are currently online.\n\n**Total suspects monitored:** ${SUSPECT_USERNAMES.length}\n**Checked:** ${allUserIds.length} valid users`)
+              .setDescription(`No suspects are currently online.\n\n**Monitored:** ${SUSPECT_USERNAMES.length} suspects`)
               .setTimestamp()
               .setFooter({ text: "FBI TEAM ROBLOX" })
           ]
         });
       }
 
-      // Create embed with online users
       const embed = new EmbedBuilder()
         .setColor(0xff0000)
         .setTitle("🚨 Suspects Currently Online")
         .setDescription(
-          onlineUsers
-            .map(user => {
-              if (user.link) {
-                return `• **${user.username}**\n  ${user.status}: [${user.game}](${user.link})`;
-              } else {
-                return `• **${user.username}**\n  ${user.status}: ${user.game}`;
-              }
-            })
-            .join("\n\n")
+          onlineUsers.map(user => {
+            if (user.link) {
+              return `• **${user.username}**\n  ${user.status}: [${user.game}](${user.link})`;
+            } else {
+              return `• **${user.username}**\n  ${user.status}: ${user.game}`;
+            }
+          }).join("\n\n")
         )
         .setFooter({ 
           text: `${onlineUsers.length} suspect(s) online • FBI TEAM ROBLOX` 
@@ -303,8 +206,10 @@ export default {
 
       await interaction.editReply({ embeds: [embed] });
 
+      console.log(`✓ Command completed. Found ${onlineUsers.length} online suspects.`);
+
     } catch (err) {
-      console.error("Fatal error in suspect-online command:", err);
+      console.error('Fatal error:', err);
       
       try {
         await interaction.editReply({
@@ -312,7 +217,7 @@ export default {
             new EmbedBuilder()
               .setColor(0xff0000)
               .setTitle("❌ Error")
-              .setDescription(`An unexpected error occurred:\n\`\`\`${err.message}\`\`\`\nPlease check the logs and try again.`)
+              .setDescription(`Failed to check Roblox presence.\n\`\`\`${err.message}\`\`\``)
               .setTimestamp()
           ]
         });
